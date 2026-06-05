@@ -20,10 +20,17 @@ let currentMode = 'forward';
 
 function init() {
     bindEvents();
+    onKnifeTypeChange();
     updateCalculations();
     drawDecayChart();
     updateKnifeDiagram();
     updateMaterialPreview();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function bindEvents() {
@@ -61,7 +68,17 @@ function onKnifeTypeChange() {
     angleSlider.max = config.maxAngle;
     angleSlider.value = config.defaultAngle;
     
+    updateAngleSliderLabels(config.minAngle, config.maxAngle);
+    
     onSliderChange();
+}
+
+function updateAngleSliderLabels(minAngle, maxAngle) {
+    const range = maxAngle - minAngle;
+    document.getElementById('angleLabelMin').textContent = minAngle + '°';
+    document.getElementById('angleLabel2').textContent = (minAngle + range * 0.33).toFixed(0) + '°';
+    document.getElementById('angleLabel3').textContent = (minAngle + range * 0.66).toFixed(0) + '°';
+    document.getElementById('angleLabelMax').textContent = maxAngle + '°';
 }
 
 function onSliderChange() {
@@ -346,14 +363,23 @@ function updateMaterialPreview() {
     const scale = 2;
     
     const removalDepth = (edgeThickness / 100) * scale;
-    const removalLength = removalDepth / Math.tan(angleRad);
+    let removalLength = removalDepth / Math.tan(angleRad);
+    
+    const maxLength = 15;
+    if (removalLength > maxLength) {
+        const scaleFactor = maxLength / removalLength;
+        removalLength = maxLength;
+    }
+    
+    const tipX = Math.min(180 + removalLength, 198);
+    const tipY = 50 - removalDepth / 2;
     
     document.getElementById('removedMaterial').setAttribute('points',
-        `180,45 180,55 ${180 + removalLength},${50 - removalDepth / 2}`
+        `180,45 180,55 ${tipX},${tipY}`
     );
     
     document.getElementById('newEdge').setAttribute('points',
-        `180,45 ${180 + removalLength},${50 - removalDepth / 2} 180,55`
+        `180,45 ${tipX},${tipY} 180,55`
     );
 }
 
@@ -364,7 +390,8 @@ function calculateReverse() {
     const hardness = parseFloat(document.getElementById('steelHardness').value);
     
     const bevelLengthUm = bevelLength * 1000;
-    const calculatedAngle = Math.asin(measuredWidth / bevelLengthUm) * (180 / Math.PI) * 2;
+    const ratio = Math.min(measuredWidth / (2 * bevelLengthUm), 1);
+    const calculatedAngle = Math.asin(ratio) * 2 * (180 / Math.PI);
     
     const knifeType = document.getElementById('knifeType').value;
     const config = KNIFE_TYPES[knifeType];
@@ -518,9 +545,9 @@ function showSavedKnives() {
     list.innerHTML = saved.map(knife => `
         <div class="saved-knife-item">
             <div class="saved-knife-info">
-                <div class="saved-knife-name">${knife.name}</div>
+                <div class="saved-knife-name">${escapeHtml(knife.name)}</div>
                 <div class="saved-knife-details">
-                    ${KNIFE_TYPES[knife.type].name} | ${knife.angle}° | HRC${knife.hardness} | 
+                    ${escapeHtml(KNIFE_TYPES[knife.type].name)} | ${knife.angle}° | HRC${knife.hardness} | 
                     ${new Date(knife.createdAt).toLocaleDateString()}
                 </div>
             </div>

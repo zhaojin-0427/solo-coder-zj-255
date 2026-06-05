@@ -77,10 +77,10 @@
                             </label>
                             <input type="range" id="grindAngle" min="5" max="40" step="0.5" value="15">
                             <div class="slider-labels">
-                                <span>5°</span>
-                                <span>15°</span>
-                                <span>25°</span>
-                                <span>40°</span>
+                                <span id="angleLabelMin">5°</span>
+                                <span id="angleLabel2">15°</span>
+                                <span id="angleLabel3">25°</span>
+                                <span id="angleLabelMax">40°</span>
                             </div>
                         </div>
 
@@ -123,14 +123,14 @@
                             <label for="measuredEdgeWidth">
                                 实测刃口宽度 (μm): <span id="measuredWidthValue" class="value-display">25</span>
                             </label>
-                            <input type="range" id="measuredEdgeWidth" min="1" max="200" step="1" value="25">
+                            <input type="range" id="measuredEdgeWidth" min="1" max="500" step="1" value="25">
                         </div>
 
                         <div class="form-group">
                             <label for="bevelLength">
                                 斜面长度 (mm): <span id="bevelLengthValue" class="value-display">5.0</span>
                             </label>
-                            <input type="range" id="bevelLength" min="1" max="20" step="0.1" value="5.0">
+                            <input type="range" id="bevelLength" min="0.2" max="30" step="0.1" value="5.0">
                         </div>
 
                         <div class="form-group">

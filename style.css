@@ -356,6 +356,154 @@ header h1 {
     background: linear-gradient(135deg, #9E9E9E, #757575);
 }
 
+.btn-compare {
+    background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+
+.comparison-count {
+    font-size: 0.85rem;
+    color: #9C27B0;
+    background: #f3e5f5;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.comparison-table-container {
+    overflow-x: auto;
+    margin-bottom: 15px;
+}
+
+.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.comparison-table th,
+.comparison-table td {
+    padding: 10px 12px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+    min-width: 100px;
+}
+
+.comparison-table th {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+
+.comparison-table th:first-child {
+    min-width: 120px;
+    text-align: left;
+}
+
+.comparison-table td:first-child {
+    background: #f5f7fa;
+    font-weight: 500;
+    text-align: left;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+
+.comparison-table tbody tr:nth-child(even) {
+    background: #fafafa;
+}
+
+.comparison-table tbody tr:hover {
+    background: #f0f4ff;
+}
+
+.highlight-best-sharpness {
+    background: #e8f5e9 !important;
+    color: #2e7d32;
+    font-weight: 700;
+    position: relative;
+}
+
+.highlight-best-sharpness::after {
+    content: '★最锋利';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.65rem;
+    background: #4CAF50;
+    color: white;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.highlight-best-durability {
+    background: #e3f2fd !important;
+    color: #1565c0;
+    font-weight: 700;
+    position: relative;
+}
+
+.highlight-best-durability::after {
+    content: '★最耐用';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.65rem;
+    background: #2196F3;
+    color: white;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.highlight-best-sharpness.highlight-best-durability::after {
+    content: '★最佳';
+    background: #FF9800;
+}
+
+.comparison-scheme-header {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 4px;
+    word-break: break-all;
+}
+
+.comparison-scheme-type {
+    font-size: 0.7rem;
+    color: #999;
+}
+
+.comparison-delete-btn {
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: background 0.2s;
+}
+
+.comparison-delete-btn:hover {
+    background: #d32f2f;
+}
+
+.comparison-actions {
+    text-align: right;
+}
+
 .saved-knife-item {
     display: flex;
     justify-content: space-between;

@@ -15,8 +15,11 @@ const SHARPNESS_THRESHOLDS = {
 };
 
 const STORAGE_KEY = 'knife_grinding_data';
+const COMPARISON_STORAGE_KEY = 'knife_grinding_comparison';
+const MAX_COMPARISON_COUNT = 3;
 
 let currentMode = 'forward';
+let comparisonList = [];
 
 function init() {
     bindEvents();
@@ -25,6 +28,8 @@ function init() {
     drawDecayChart();
     updateKnifeDiagram();
     updateMaterialPreview();
+    loadComparison();
+    renderComparisonTable();
 }
 
 function escapeHtml(text) {
@@ -51,6 +56,8 @@ function bindEvents() {
 
     document.getElementById('saveBtn').addEventListener('click', saveKnifeData);
     document.getElementById('loadBtn').addEventListener('click', showSavedKnives);
+    document.getElementById('addToCompareBtn').addEventListener('click', addToComparison);
+    document.getElementById('clearComparisonBtn').addEventListener('click', clearComparison);
     document.getElementById('exportBtn').addEventListener('click', exportChecklist);
     document.getElementById('printBtn').addEventListener('click', printReferenceCard);
 
@@ -590,6 +597,151 @@ function deleteKnife(id) {
     showSavedKnives();
 }
 
+function loadComparison() {
+    const data = localStorage.getItem(COMPARISON_STORAGE_KEY);
+    if (data) {
+        try {
+            comparisonList = JSON.parse(data);
+        } catch (e) {
+            comparisonList = [];
+        }
+    }
+}
+
+function saveComparison() {
+    localStorage.setItem(COMPARISON_STORAGE_KEY, JSON.stringify(comparisonList));
+}
+
+function addToComparison() {
+    if (currentMode !== 'forward') {
+        alert('请先切换到正向计算模式再加入对比');
+        return;
+    }
+
+    if (comparisonList.length >= MAX_COMPARISON_COUNT) {
+        alert(`最多只能对比 ${MAX_COMPARISON_COUNT} 个方案，请先删除部分方案`);
+        return;
+    }
+
+    const angle = parseFloat(document.getElementById('grindAngle').value);
+    const hardness = parseFloat(document.getElementById('steelHardness').value);
+    const edgeThickness = parseFloat(document.getElementById('edgeThickness').value);
+    const stock = parseFloat(document.getElementById('bladeStock').value);
+    const knifeType = document.getElementById('knifeType').value;
+    const knifeName = document.getElementById('knifeName').value.trim() || '未命名方案';
+
+    const materialRemoval = calculateMaterialRemoval(angle, stock, edgeThickness);
+    const sharpness = calculateTheoreticalSharpness(angle, edgeThickness, hardness);
+    const edgeRadius = calculateEdgeRadius(edgeThickness, angle);
+    const durability = calculateDurability(angle, hardness);
+
+    const scheme = {
+        id: Date.now(),
+        knifeType,
+        knifeName,
+        angle,
+        hardness,
+        edgeThickness,
+        stock,
+        materialRemoval,
+        sharpness,
+        edgeRadius,
+        durability,
+        addedAt: new Date().toISOString()
+    };
+
+    comparisonList.push(scheme);
+    saveComparison();
+    renderComparisonTable();
+
+    alert(`方案 "${knifeName}" 已加入对比`);
+}
+
+function deleteComparison(id) {
+    if (!confirm('确定要删除此对比方案吗？')) return;
+    
+    comparisonList = comparisonList.filter(item => item.id !== id);
+    saveComparison();
+    renderComparisonTable();
+}
+
+function clearComparison() {
+    if (comparisonList.length === 0) return;
+    if (!confirm('确定要清空所有对比方案吗？')) return;
+    
+    comparisonList = [];
+    saveComparison();
+    renderComparisonTable();
+}
+
+function renderComparisonTable() {
+    const card = document.getElementById('comparisonCard');
+    const tableHead = document.querySelector('#comparisonTable thead tr');
+    const tableBody = document.getElementById('comparisonTableBody');
+    const countSpan = document.getElementById('comparisonCount');
+
+    countSpan.textContent = `${comparisonList.length}/${MAX_COMPARISON_COUNT}`;
+
+    if (comparisonList.length === 0) {
+        card.style.display = 'none';
+        return;
+    }
+
+    card.style.display = 'block';
+
+    let bestSharpness = Infinity;
+    let bestDurability = -Infinity;
+    let bestSharpnessId = null;
+    let bestDurabilityId = null;
+
+    comparisonList.forEach(item => {
+        if (item.sharpness < bestSharpness) {
+            bestSharpness = item.sharpness;
+            bestSharpnessId = item.id;
+        }
+        if (item.durability > bestDurability) {
+            bestDurability = item.durability;
+            bestDurabilityId = item.id;
+        }
+    });
+
+    tableHead.innerHTML = '<th>指标</th>' + comparisonList.map(item => {
+        const typeName = KNIFE_TYPES[item.knifeType]?.name || item.knifeType;
+        return `
+            <th>
+                <div class="comparison-scheme-header">${escapeHtml(item.knifeName)}</div>
+                <div class="comparison-scheme-type">${escapeHtml(typeName)}</div>
+                <button class="comparison-delete-btn" onclick="deleteComparison(${item.id})">删除</button>
+            </th>
+        `;
+    }).join('');
+
+    const rows = [
+        { label: '研磨角度', key: 'angle', suffix: '°', format: v => v.toFixed(1) },
+        { label: '钢材硬度', key: 'hardness', suffix: ' HRC', format: v => v.toFixed(0) },
+        { label: '刃口厚度', key: 'edgeThickness', suffix: ' μm', format: v => v.toFixed(0) },
+        { label: '刀身厚度', key: 'stock', suffix: ' mm', format: v => v.toFixed(1) },
+        { label: '材料去除量', key: 'materialRemoval', suffix: ' mm³/mm', format: v => v.toFixed(4) },
+        { label: '理论锋利度', key: 'sharpness', suffix: ' N', format: v => v.toFixed(1), highlight: 'sharpness' },
+        { label: '刃口半径', key: 'edgeRadius', suffix: ' μm', format: v => v.toFixed(2) },
+        { label: '耐用度', key: 'durability', suffix: ' 次', format: v => v.toLocaleString(), highlight: 'durability' }
+    ];
+
+    tableBody.innerHTML = rows.map(row => {
+        const cells = comparisonList.map(item => {
+            let highlightClass = '';
+            if (row.highlight === 'sharpness' && item.id === bestSharpnessId) {
+                highlightClass = 'highlight-best-sharpness';
+            }
+            if (row.highlight === 'durability' && item.id === bestDurabilityId) {
+                highlightClass += ' highlight-best-durability';
+            }
+            return `<td class="${highlightClass.trim()}">${row.format(item[row.key])}${row.suffix}</td>`;
+        }).join('');
+        return `<tr><td>${row.label}</td>${cells}</tr>`;
+    }).join('');
+}
+
 function exportChecklist() {
     const angle = parseFloat(document.getElementById('grindAngle').value);
     const hardness = parseFloat(document.getElementById('steelHardness').value);
@@ -609,7 +761,7 @@ function exportChecklist() {
     else if (sharpness < SHARPNESS_THRESHOLDS.fair) sharpnessLevel = '一般';
     else sharpnessLevel = '需研磨';
     
-    const checklist = `
+    let checklist = `
 刀具研磨检查清单
 ================
 生成时间: ${new Date().toLocaleString()}
@@ -654,8 +806,66 @@ function exportChecklist() {
 - 每次研磨后注意去毛刺处理
 - 钢材硬度越高，研磨难度越大但保持性越好
 - 建议定期检查刃口状态，及时维护
+`.trim();
 
-    `.trim();
+    if (comparisonList.length > 0) {
+        let bestSharpness = Infinity;
+        let bestDurability = -Infinity;
+        let bestSharpnessIdx = -1;
+        let bestDurabilityIdx = -1;
+
+        comparisonList.forEach((item, idx) => {
+            if (item.sharpness < bestSharpness) {
+                bestSharpness = item.sharpness;
+                bestSharpnessIdx = idx;
+            }
+            if (item.durability > bestDurability) {
+                bestDurability = item.durability;
+                bestDurabilityIdx = idx;
+            }
+        });
+
+        checklist += `
+
+研磨方案对比
+============
+共 ${comparisonList.length} 个方案对比
+
+`;
+
+        const schemeLabels = ['方案A', '方案B', '方案C'];
+        comparisonList.forEach((item, idx) => {
+            const label = schemeLabels[idx] || `方案${idx + 1}`;
+            const typeName = KNIFE_TYPES[item.knifeType]?.name || item.knifeType;
+            let markers = [];
+            if (idx === bestSharpnessIdx) markers.push('★最锋利');
+            if (idx === bestDurabilityIdx) markers.push('★最耐用');
+            const markerStr = markers.length > 0 ? ` (${markers.join(', ')})` : '';
+
+            checklist += `${label}: ${item.knifeName} (${typeName})${markerStr}
+`;
+        });
+
+        checklist += `
+--------------------------------------------------------------------------------
+指标                  ${comparisonList.map((_, idx) => schemeLabels[idx] || `方案${idx + 1}`).join('        ')}
+--------------------------------------------------------------------------------
+研磨角度              ${comparisonList.map(item => `${item.angle.toFixed(1)}°`.padEnd(8)).join('        ')}
+钢材硬度              ${comparisonList.map(item => `HRC${item.hardness.toFixed(0)}`.padEnd(8)).join('        ')}
+刃口厚度              ${comparisonList.map(item => `${item.edgeThickness.toFixed(0)}μm`.padEnd(8)).join('        ')}
+刀身厚度              ${comparisonList.map(item => `${item.stock.toFixed(1)}mm`.padEnd(8)).join('        ')}
+材料去除量            ${comparisonList.map(item => `${item.materialRemoval.toFixed(4)}`.padEnd(8)).join('        ')}
+理论锋利度            ${comparisonList.map((item, idx) => `${item.sharpness.toFixed(1)}N${idx === bestSharpnessIdx ? '*' : ''}`.padEnd(8)).join('        ')}
+刃口半径              ${comparisonList.map(item => `${item.edgeRadius.toFixed(2)}μm`.padEnd(8)).join('        ')}
+耐用度                ${comparisonList.map((item, idx) => `${item.durability.toLocaleString()}${idx === bestDurabilityIdx ? '*' : ''}`.padEnd(8)).join('        ')}
+--------------------------------------------------------------------------------
+
+说明:
+- ★最锋利: 理论锋利度数值最小，切割力最低
+- ★最耐用: 耐用度预估切割次数最多
+- * 标记表示该指标在对比方案中最优
+`;
+    }
     
     const blob = new Blob([checklist], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);

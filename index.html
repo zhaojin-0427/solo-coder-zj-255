@@ -211,8 +211,30 @@
                     <div class="button-group">
                         <button id="saveBtn" class="btn btn-success">保存参数</button>
                         <button id="loadBtn" class="btn btn-info">加载刀具</button>
+                        <button id="addToCompareBtn" class="btn btn-compare">加入对比</button>
                         <button id="exportBtn" class="btn btn-warning">导出检查清单</button>
                         <button id="printBtn" class="btn btn-secondary">打印角度对照卡</button>
+                    </div>
+                </div>
+
+                <div class="card" id="comparisonCard" style="display: none;">
+                    <h2>
+                        研磨方案对比
+                        <span class="comparison-count" id="comparisonCount">0/3</span>
+                    </h2>
+                    <div class="comparison-table-container">
+                        <table class="comparison-table" id="comparisonTable">
+                            <thead>
+                                <tr>
+                                    <th>指标</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparisonTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="comparison-actions">
+                        <button id="clearComparisonBtn" class="btn btn-danger btn-sm">清空对比</button>
                     </div>
                 </div>
 
